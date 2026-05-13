@@ -179,8 +179,41 @@ cosine similarity = dot product / (length of A × length of B)
 | 0.5 | Loosely related |
 | 0.0 | Completely unrelated |
 
-This is done for all 60 category vectors. The top 3 scores are returned and
-sent to the LLM to pick the best match:
+**How all 58 categories are scored at once**
+
+Rather than looping through each category one by one, the code does a single
+matrix multiplication using the `@` operator:
+
+```python
+scores = self.matrix @ q
+```
+
+`self.matrix` is a 58×384 matrix — one row per category, 384 dimensions per
+row. `q` is your 384-number query vector. The `@` multiplies every row against
+`q` simultaneously, producing 58 scores in one operation:
+
+```
+self.matrix (58 × 384)  @  q (384 numbers)  →  scores (58 numbers)
+
+   [0.04, -0.18, 0.30, ..., -0.06]  · q  =  0.91   ← Meat > Beef > Ground Beef
+   [0.20,  0.14,-0.08, ...,  0.12]  · q  =  0.22   ← Dairy > Milk & Cream > ...
+   [0.11, -0.03, 0.44, ...,  0.09]  · q  =  0.61   ← Snacks > Crackers > ...
+   ... 55 more rows
+```
+
+The equivalent written as a loop would be:
+
+```python
+scores = []
+for category_vector in self.matrix:
+    score = sum(a * b for a, b in zip(category_vector, q))
+    scores.append(score)
+```
+
+`@` does the same thing but in one CPU instruction via NumPy — which is why
+the search is instant rather than slow.
+
+The top 3 scores are then returned and sent to the LLM to pick the best match:
 
 | Category | Similarity score |
 |---|---|
