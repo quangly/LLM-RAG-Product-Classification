@@ -17,8 +17,10 @@
 #   or Chroma.
 
 import json
-import os
 import sqlite3
+
+import os
+os.environ["HF_HUB_VERBOSITY"] = "error"
 
 from sentence_transformers import SentenceTransformer
 

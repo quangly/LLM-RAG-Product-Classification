@@ -103,6 +103,14 @@ In a second terminal:
 make download      # pull the llama2 model (one-time, ~3.8 GB)
 make build-index   # embed Nielsen taxonomy into nielsen_embeddings.db (one-time)
 make classify      # run the demo classifier and write output.csv
+make query PRODUCT="oat milk 64 oz"  # classify a single product
+make query PRODUCT="land o lakes butter"  # classify a single product
+```
+
+To shut down the Ollama server when you're done:
+
+```bash
+make stop          # kill the Ollama server process
 ```
 
 ---
@@ -138,7 +146,9 @@ calling Python directly:
 make install       # create venv and install dependencies
 make build-index   # embed Nielsen categories into nielsen_embeddings.db
 make classify      # run the classification demo and write output.csv
+make query PRODUCT="oat milk 64 oz"  # classify a single product
 make serve         # start the Ollama server
+make stop          # stop the Ollama server
 make download      # download the Llama2 model via Ollama
 make list-models   # list installed Ollama models
 make clean         # delete generated nielsen_embeddings.db

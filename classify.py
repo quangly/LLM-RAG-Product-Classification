@@ -20,6 +20,9 @@ import json
 import os
 import requests
 
+import os
+os.environ["HF_HUB_VERBOSITY"] = "error"
+
 from sentence_transformers import SentenceTransformer
 
 from vector_store import VectorStore
@@ -233,6 +236,14 @@ TEST_PRODUCTS = [
 ]
 
 if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) > 1:
+        product = " ".join(sys.argv[1:])
+        result = classify_product(product)
+        print(f"{result['product']}  →  {result['category']}")
+        sys.exit(0)
+
     print("=" * 70)
     print("Nielsen RAG Grocery Classifier")
     print("=" * 70)
