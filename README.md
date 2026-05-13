@@ -399,6 +399,34 @@ python embed_and_index.py
 
 ---
 
+## Exploring the database visually
+
+The easiest way to inspect `nielsen_embeddings.db` without leaving VS Code is
+the **SQLite Viewer** extension by Florian Klampfer.
+
+### Install
+
+1. Open Extensions (`Cmd+Shift+X`)
+2. Search `SQLite Viewer`
+3. Click **Install**
+
+### Open the database
+
+1. In the VS Code file explorer, click `nielsen_embeddings.db`
+2. It opens as a spreadsheet tab showing all rows in the `category_embeddings` table
+
+If it opens as garbled text instead, right-click the file → **Open With** → **SQLite Viewer**.
+
+### What you'll see
+
+| Column | Contents |
+|---|---|
+| `id` | Short identifier for the category (e.g. `beef_ground`) |
+| `text` | Full Nielsen path (e.g. `Meat > Beef > Ground Beef`) |
+| `embedding` | The 384-number vector stored as a JSON array |
+
+---
+
 ## Scaling beyond SQLite
 
 For >10,000 categories, replace `vector_store.py` with:
