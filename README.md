@@ -89,6 +89,58 @@ against beef categories and high against dairy ones.
 
 ---
 
+## Model serving
+
+There are two separate model serving mechanisms in this code — one for
+embeddings, one for the LLM.
+
+### SentenceTransformer — runs in-process
+
+```python
+embedding_model = SentenceTransformer(EMBEDDING_MODEL)  # loaded once at startup
+embedding_model.encode([product_name])                  # runs directly in Python
+```
+
+This model runs inside your Python process. No server, no HTTP call. When
+`classify.py` starts it loads the model weights into RAM and calls them
+directly.
+
+### Llama2 via Ollama — runs as a server
+
+```python
+response = requests.post(
+    "http://localhost:11434/api/generate",
+    json={"model": "llama2", "prompt": prompt, "stream": False}
+)
+```
+
+This model runs in a separate process — the Ollama server you started with
+`make serve`. Your Python code talks to it over HTTP like calling any web API:
+
+```
+classify.py  ──── HTTP POST ────►  Ollama server (port 11434)
+                                         │
+                                    loads llama2
+                                    runs inference
+                                         │
+classify.py  ◄─── JSON response ────  { "response": "Meat > Beef > ..." }
+```
+
+### Why two different approaches?
+
+| | SentenceTransformer | Ollama / Llama2 |
+|---|---|---|
+| Model size | 22 MB — light enough to embed in-process | 3.8 GB — too large to load per-request |
+| Serving | In-process, direct Python call | Separate server, HTTP request |
+| Stays loaded | As long as the Python process runs | Ollama keeps it hot for a few minutes |
+| Speed | ~1 ms per embedding | ~2–10 seconds per classification |
+
+The Ollama server approach means the model stays loaded in RAM between queries.
+If you run `make query` twice in a row, the second one is faster because Ollama
+did not unload the model.
+
+---
+
 ## What this repo includes
 
 This project stores the full Nielsen taxonomy in SQLite, retrieves the
