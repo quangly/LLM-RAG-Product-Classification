@@ -111,20 +111,86 @@ nielsen_rag/
 
 ## Vector search explained
 
-This project indexes the Nielsen taxonomy, not a product catalogue. The
-vector search works like this:
+### Step 1 — Build time (`embed_and_index.py`)
 
-1. All Nielsen category paths are embedded once and stored in
-   `nielsen_embeddings.db`.
-2. When you classify a product, the product name is embedded with the same
-   local SentenceTransformer model.
-3. The query embedding is compared against the stored Nielsen category
-   embeddings using cosine similarity.
-4. The top `K` nearest categories are returned and sent to the local LLM.
+Every Nielsen category path is converted to a vector once and stored in SQLite:
 
-So the system is comparing a single input product description against the
-Nielsen categories. It is not embedding or searching your full product
-catalogue; it only uses the input product string at classification time.
+```
+"Meat > Beef > Ground Beef"              → [0.041, -0.184, 0.295, ..., -0.062]
+"Dairy > Milk & Cream > Fluid Milk"      → [0.203,  0.145, -0.087, ...,  0.124]
+"Snacks > Crackers > ..."                → [...]
+... 58 more rows
+```
+
+This only runs once. After that, the vectors sit in `nielsen_embeddings.db`
+and are loaded into memory at query time.
+
+### Step 2 — Query time (`classify.py`)
+
+When you run `make query PRODUCT="ground beef 1 lb"`, the same model converts
+your product into a vector:
+
+```
+"ground beef 1 lb" → [0.039, -0.178, 0.301, ..., -0.058]
+```
+
+### Step 3 — Cosine similarity (`vector_store.py`)
+
+That query vector is compared against every stored category vector using
+cosine similarity — measuring the angle between two vectors. An angle near 0°
+means the two texts are semantically close; near 90° means unrelated.
+
+**How the score is calculated (3-dimension example):**
+
+```
+"ground beef 1 lb"          A = [0.04, -0.18, 0.30]
+"Meat > Beef > Ground Beef" B = [0.04, -0.18, 0.30]
+```
+
+**Step 1 — Dot product: multiply each pair of dimensions, then sum**
+```
+(0.04 × 0.04) + (-0.18 × -0.18) + (0.30 × 0.30)
+= 0.0016 + 0.0324 + 0.0900
+= 0.124
+```
+
+**Step 2 — Divide by the length of each vector**
+
+This normalizes the result so the score is always between 0 and 1, regardless
+of how large or small the numbers are:
+```
+cosine similarity = dot product / (length of A × length of B)
+                  = 0.124 / (0.354 × 0.354)
+                  = 0.91
+```
+
+**What the score means:**
+
+| Score | Meaning |
+|---|---|
+| 1.0 | Vectors point in exactly the same direction (identical meaning) |
+| 0.5 | Loosely related |
+| 0.0 | Completely unrelated |
+
+This is done for all 60 category vectors. The top 3 scores are returned and
+sent to the LLM to pick the best match:
+
+| Category | Similarity score |
+|---|---|
+| Meat > Beef > Ground Beef | 0.91 ✓ |
+| Meat > Poultry > Fresh Chicken | 0.61 |
+| Dairy > Milk & Cream > Fluid Milk | 0.22 |
+
+### Why it works without keyword matching
+
+The query `"hamburger meat"` never contains the word "beef" — but both phrases
+were learned to mean similar things during training, so their vectors point in
+nearly the same direction and cosine similarity catches that. A keyword search
+would miss it entirely.
+
+This project only searches the Nielsen taxonomy (60 categories), not your full
+product catalogue. It embeds only the input product string at classification
+time.
 
 ## Setup & usage
 
