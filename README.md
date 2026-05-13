@@ -49,6 +49,46 @@ make up a category that isn't in the retrieved list.
 
 ---
 
+## What is SentenceTransformer?
+
+SentenceTransformer is a Python library that converts text into fixed-size
+numerical vectors called **embeddings**. Two pieces of text that mean similar
+things will produce vectors that are close together in space; unrelated text
+will produce vectors that are far apart.
+
+This project uses the `all-MiniLM-L6-v2` model, which runs entirely on your
+machine (no API calls, no cost). It is a small, fast model (22 MB) that maps
+any sentence or phrase to a 384-dimensional vector.
+
+**Why embeddings matter for classification:**
+Without embeddings, matching "80/20 ground beef" to "Meat > Beef > Ground Beef"
+would require exact keyword rules. With embeddings, the model understands that
+"ground beef", "beef mince", and "hamburger meat" are semantically the same
+thing and maps them all close to the same vector — so the similarity search
+finds the right category even with varied or informal product descriptions.
+
+The same model must be used to embed both the taxonomy at index time and the
+product at query time. Mixing models produces meaningless similarity scores.
+
+**What an embedding looks like (first 5 of 384 dimensions):**
+
+| Dimension | "ground beef 1 lb" | "hamburger meat" | "oat milk 64 oz" |
+|----------:|-------------------:|-----------------:|-----------------:|
+| 1 | 0.0412 | 0.0398 | -0.2031 |
+| 2 | -0.1837 | -0.1762 | 0.1454 |
+| 3 | 0.2951 | 0.3014 | -0.0873 |
+| 4 | 0.0129 | 0.0143 | 0.3192 |
+| 5 | -0.0674 | -0.0701 | 0.0518 |
+| … | … | … | … |
+| 384 | -0.0623 | -0.0589 | 0.1247 |
+
+Notice that "ground beef" and "hamburger meat" have nearly identical values
+across every dimension — their vectors are close in space, so cosine similarity
+returns a high score. "Oat milk" has very different values, so it scores low
+against beef categories and high against dairy ones.
+
+---
+
 ## What this repo includes
 
 This project stores the full Nielsen taxonomy in SQLite, retrieves the
