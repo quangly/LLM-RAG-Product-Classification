@@ -148,6 +148,13 @@ means the two texts are semantically close; near 90° means unrelated.
 ```
 
 **Step 1 — Dot product: multiply each pair of dimensions, then sum**
+
+A dot product multiplies each pair of matching numbers from two vectors, then
+adds all the results together. If two vectors have large positive numbers in
+the same positions, those pairs multiply to large numbers and the sum gets
+big — high score. If one is positive where the other is negative, they cancel
+out — low score. This naturally rewards alignment between two vectors.
+
 ```
 (0.04 × 0.04) + (-0.18 × -0.18) + (0.30 × 0.30)
 = 0.0016 + 0.0324 + 0.0900
